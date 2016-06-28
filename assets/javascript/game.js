@@ -13,17 +13,18 @@ var config = {
 // create variable to reference firebase
 var db = firebase.database();
 
-//function clearform() {
- // }
-// var randomDate = 
- var currentTime = moment().format();
+
+
   var trainName = "";
   var destination = "";
-  var trainTime = moment().format('hh:mm');
+  var trainTime = "";
   var frequency = "";
-  var minutesAway = moment(currentTime).diff( moment(), "mm");
+  var minutesAway = "";
+
+ console.log(moment().format('hh:mm a'));
 
 $("#addTrainBtn").on('click', function(){
+
 
 
   //user input is grabbed here
@@ -32,39 +33,49 @@ $("#addTrainBtn").on('click', function(){
   trainTime = $("#trainTimeInput").val().trim(); 
   frequency = $("#frequencyInput").val().trim(); 
 
+  // First Time (pushed back 1 year to make sure it comes before current time)
+    var firstTimeConverted = moment(trainTime,"hh:mm").subtract(1, "years");
+    console.log(firstTimeConverted);
+
+    // Current Time
+    var currentTime = moment();
+    console.log("Current time: " + moment(currentTime).format("hh:mm"));
+
+    // Difference between the times
+    var timeDiff = moment().diff(moment(firstTimeConverted), "minutes");
+    console.log("Difference of time: " + timeDiff);
+
+    // Time remaining
+    var timeRemaining = timeDiff % frequency; 
+    console.log(timeRemaining);
+
+    // Minute Until Train
+    var minutesAway = frequency - timeRemaining;
+    console.log("minutes until next arrival: " + minutesAway);
+
+    // Next Train
+    var nextTrain = moment().add(minutesAway, "minutes")
+    console.log("Arrival time: " + moment(nextTrain).format("hh:mm"))
+
 // temporary data to hold objects
-var newPassenger = {
+db.ref().push({
   trainName: trainName,
   destination: destination,
   trainTime: trainTime,
   frequency: frequency,
   minutesAway: minutesAway,
-  //dateAdded: Firebase.ServerValue.TIMESTAMP
-}
-//database.ref().set(newPassenger);
-//moment().endOf('day').fromNow();
+  nextTrain: moment(nextTrain).format("hh:mm"),
+  dateAdded: firebase.database.ServerValue.TIMESTAMP
+});
 
-// upload passenger input data to firebase
-
-db.ref().push(newPassenger);
-
- $("#trainNameInput").val(''); 
+// clear out typed in form values/strings
+  $("#trainNameInput").val(''); 
   $("#destinationInput").val('');
   $("#trainTimeInput").val('');
   $("#frequencyInput").val('');
 
-  //db.ref().set(newPassenger);
-// console logging purposes
-
-console.log(newPassenger.trainName)
-console.log(newPassenger.destination)
-console.log(newPassenger.trainTime)
-console.log(newPassenger.frequency)
-
-// clear out typed in form values/strings
-
-
 return false;
+
 });
 
 
@@ -73,27 +84,26 @@ return false;
 //Creates firebase to add passenger inputs to the database and rows in html where their inputs live
 db.ref().on("child_added", function(childSnapshot){
 
+// console logging to make sure values work in console
 console.log(childSnapshot.val());
   console.log(childSnapshot.val().trainName);
   console.log(childSnapshot.val().destination);
   console.log(childSnapshot.val().trainTime);
   console.log(childSnapshot.val().frequency);
   console.log(childSnapshot.val().minutesAway);
+  //console.log(childSnapshot.val().currentTime);
 
+// sets the values to not disappear when page gets refreshed
   var passengerInput = childSnapshot.val();
-  //var timestamp = childSnapshot.val().dateAdded;
+  var trainName = childSnapshot.val().trainName;
+  var destination = childSnapshot.val().destination;
+  var frequency = childSnapshot.val().frequency;
+  var trainTime = childSnapshot.val().trainTime;
+  var minutesAway = childSnapshot.val().minutesAway;
 
    $('#trainSchedule > tbody').append("<tr><td>" + 
     trainName + "</td><td>" + destination + "</td><td>" + 
-    trainTime + "</td><td>" + frequency + "</td><td>" + minutesAway + "</td></tr>");
-
-
-  console.log(childSnapshot.val());
-  console.log(trainName);
-  console.log(childSnapshot.val().destination);
-  console.log(trainTime);
-  console.log(childSnapshot.val().frequency);
-
+    frequency + "</td><td>" + trainTime + "</td><td>" + minutesAway + "</td></tr>");
 
 
 }), function (errorObject) {
